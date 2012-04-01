@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <title>Optimizing JavaScript</title>
+        <meta name="viewport" content="width=1024, user-scalable=no">
+
+        <!-- Replace path with correct path to deck.core.css. -->
+        <link rel="stylesheet" href="../core/deck.core.css" type="text/css">
+        <link rel="stylesheet" href="common.css">
+        <link rel="stylesheet" href="../themes/transition/horizontal-slide.css">
+
+        <!-- Any other extension CSS files go here. -->
+        <link rel="stylesheet" href="../extensions/goto/deck.goto.css">
+        <link rel="stylesheet" href="../extensions/menu/deck.menu.css">
+        <link rel="stylesheet" href="../extensions/navigation/deck.navigation.css">
+        <link rel="stylesheet" href="../extensions/status/deck.status.css">
+        <link rel="stylesheet" href="../extensions/hash/deck.hash.css">
+        <link rel="stylesheet" href="../extensions/codemirror/deck.codemirror.css">
+        <link rel="stylesheet" href="../extensions/codemirror/themes/default.css">
+
+        <!-- Replace path with correct path to Modernizr file. -->
+        <script src="../modernizr.custom.js"></script>
+    </head>
+    <body class="deck-container">
+
+        <!-- Create any number of elements with class slide within the container -->
+    <article style="height:100%; width:100%" class="deck-container">
+    <section class="slide">
+        <h1>Optimizing JavaScript</h1>
+    </section>
+    <section class="slide">
+        <h2>About Me</h2>
+        <ul>
+            <li>JavaScript Programmer at Travelers</li>
+            <li>codedodger.com</li>
+            <li>github.com/AutoSponge</li>
+        </ul>
+    </section>
+    <section class="slide">
+        <h2>Current Project</h2>
+        <ul>
+            <li>Agressive performance SLAs</li>
+            <li>Rules-driven UI behavior</li>
+            <li>60k+ lines of code</li>
+        </ul>
+    </section>
+    <section class="slide">
+        <h2>Optimizing JavaScript</h2>
+        <h1>Rule 1: Just Say No</h1>
+    </section>
+    <section class="slide">
+        <h2>Rule 1: Optimize Process First</h2>
+        <img style="height:500px;" src="2769.png">
+    </section>
+    <section class="slide">
+        <h2>Optimizing JavaScript</h2>
+        <h1>Rule 2: Reduce</h1>
+    </section>
+    <section class="slide">
+        <h2>Optimizing JavaScript</h2>
+        <h3>Examplew: cache state to reduce DOM touches</h3>
+        <div>
+            <script type="codemirror" data-selector="#code-show">
+                var suite = new Benchmark.Suite;
+                suite.on("start", function () {
+                    $("#wait").show();
+                }).on('complete', function() {
+                    $("#wait").hide();
+                    this.forEach(function (b) {
+                        console.log(b.name, Benchmark.formatNumber(b.hz.toFixed(0)));
+                    });
+                    console.log('Fastest is ' + this.filter('fastest').pluck('name'));
+                });
+            </script>
+            <textarea id="code-show" name="code" class="code" mode="javascript" style="display: none;" runnable="true" globals="Benchmark, jQuery, $">
+var show1 = function () {
+    $("button").show();
+};
+
+var show2 = (function () {
+    var $button, visible;
+    return function () {
+        if (!visible) {
+            ($button || ($button = $("button"))).show();
+            visible = true;
+        }
+    };
+}());
+
+suite.add('show1', show1)
+.add('show2', show2)
+.run({'async': true});
+            </textarea>
+        </div>
+        <div style="margin-top: 15px;">
+            <button style="display:none;">Test</button>
+        </div>
+    </section>
+    <section class="slide">
+        <h2>Optimizing JavaScript</h2>
+        <h1>Rule 3: Reuse</h1>
+    </section>
+    <section class="slide">
+        <h2>Optimizing JavaScript</h2>
+        <h3>Example: reuse objects</h3>
+        <div>
+            <script type="codemirror" data-selector="#code-args">
+                var suite = new Benchmark.Suite, doSomething = function () {};
+                suite.on("start", function () {
+                    $("#wait").show();
+                }).on('complete', function() {
+                    $("#wait").hide();
+                    this.forEach(function (b) {
+                        console.log(b.name, Benchmark.formatNumber(b.hz.toFixed(0)));
+                    });
+                    console.log('Fastest is ' + this.filter('fastest').pluck('name'));
+                });
+            </script>
+            <textarea id="code-args" name="code" class="code" mode="javascript" style="display: none;" runnable="true" globals="Benchmark, jQuery, $">
+function foo1() {
+    var i, len, args = Array.prototype.slice.call(arguments);
+    for (i = 0, len = args.length; i < len; i += 1) {
+       doSomething(args[i], i);
+    }
+}
+
+function foo2() {
+    var i, len;
+    for (i = 0, len = arguments.length; i < len; i += 1) {
+       doSomething(arguments[i], i);
+    }
+}
+
+suite.add('foo1', function () {
+    foo1(1,2,3);
+}).add('foo2', function () {
+    foo2(1,2,3);
+}).run({'async': true});
+            </textarea>
+        </div>
+    </section>
+    <section class="slide">
+        <h2>Optimizing JavaScript</h2>
+        <h3>Example: reuse calculations</h3>
+        <div>
+            <script type="codemirror" data-selector="#code-factorialagain">
+                var suite = new Benchmark.Suite;
+                suite.on("start", function () {
+                    $("#wait").show();
+                }).on('complete', function() {
+                    $("#wait").hide();
+                    this.forEach(function (b) {
+                        console.log(b.name, Benchmark.formatNumber(b.hz.toFixed(0)));
+                    });
+                    console.log('Fastest is ' + this.filter('fastest').pluck('name'));
+                });
+            </script>
+            <textarea id="code-factorialagain" name="code" class="code" mode="javascript" style="display: none;" runnable="true" globals="Benchmark, jQuery, $">
+var factorial1 = (function () {
+    var f = [];
+    return function fact(n){
+        if (n === 0 || n === 1){
+            return 1;
+        }
+        if (f[n]>0) {
+            return f[n];
+        }
+        return f[n] = fact(n-1) * n;
+    }
+}());
+
+var factorial2 = function (n) {
+    var i, f;
+    for (i = f = 1; i < n + 1; i += 1){
+        f *= i;
+    }
+    return f;
+};
+
+suite.add('factorial1', function () {
+    factorial1(20);
+}).add('factorial2', function () {
+    factorial2(20);
+}).run({'async': true});
+            </textarea>
+        </div>
+    </section>
+    <section class="slide">
+        <h2>Optimizing JavaScript</h2>
+        <h1>Rule 4: Recycle</h1>
+    </section>
+    <section class="slide">
+        <h2>Rule 4: Recycle</h2>
+        <ul>
+            <li>Code/Tests</li>
+            <li>stevesouders.com</li>
+            <li>nczonline.net</li>
+            <li>phpied.com</li>
+        </ul>
+    </section>
+    <section class="slide">
+        <h2>Optimizing JavaScript</h2>
+        <h1>Rule 5: Back To Basics</h1>
+    </section>
+    <section class="slide">
+        <h2>Optimizing JavaScript</h2>
+        <h3>Example: optimized code vs optimized coding</h3>
+        <div>
+            <script type="codemirror" data-selector="#code-get">
+                var suite = new Benchmark.Suite;
+                suite.on("start", function () {
+                    $("#wait").show();
+                }).on('complete', function() {
+                    $("#wait").hide();
+                    this.forEach(function (b) {
+                        console.log(b.name, Benchmark.formatNumber(b.hz.toFixed(0)));
+                    });
+                    console.log('Fastest is ' + this.filter('fastest').pluck('name'));
+                });
+            </script>
+            <textarea id="code-get" name="code" class="code" mode="javascript" style="display: none;" runnable="true" globals="Benchmark, jQuery, $">
+var get1 = function () {
+    return $("#wait");
+};
+
+var get2 = function () {
+    return $(document.getElementById("wait"));
+};
+
+suite.add('get1', get1)
+.add('get2', get2)
+.run({'async': true});
+            </textarea>
+        </div>
+    </section>
+    <section class="slide">
+        <h2>Optimizing JavaScript</h2>
+        <h1>Rule 6: Stand Up For Yourself</h1>
+    </section>
+    <section class="slide">
+        <h2>Rule 6: Support Decisions With Data</h2>
+        <img style="height:500px;" src="612.png">
+    </section>
+    <section class="slide">
+        <h2>Optimizing JavaScript</h2>
+        <h3>Example: factorial</h3>
+        <div>
+            <script type="codemirror" data-selector="#code-factorial">
+                var suite = new Benchmark.Suite;
+                suite.on("start", function () {
+                    $("#wait").show();
+                }).on('complete', function() {
+                    $("#wait").hide();
+                    this.forEach(function (b) {
+                        console.log(b.name, Benchmark.formatNumber(b.hz.toFixed(0)));
+                    });
+                    console.log('Fastest is ' + this.filter('fastest').pluck('name'));
+                });
+            </script>
+            <textarea id="code-factorial" name="code" class="code" mode="javascript" style="display: none;" runnable="true" globals="Benchmark, jQuery, $">
+//github.com/AutoSponge/Factorial-Performance
+var factorial1 = function fact(n){
+    if (n === 0 || n === 1){
+        return 1;
+    }
+    return fact(n-1) * n;
+};
+
+var factorial2 = function (n) {
+    var i, f;
+    for (i = f = 1; i < n + 1; i += 1){
+        f *= i;
+    }
+    return f;
+};
+
+suite.add('factorial1', function () {
+    factorial1(20);
+}).add('factorial2', function () {
+    factorial2(20);
+}).run({'async': true});
+            </textarea>
+        </div>
+    </section>
+    <section class="slide">
+        <h2>Optimizing JavaScript</h2>
+        <h1>Rule 7: Share</h1>
+    </section>
+    <section class="slide">
+        <h2>Rule 7: jsperf.com/browse</h2>
+        <img style="height:500px;" src="jsperf.png">
+    </section>
+    <section class="slide">
+        <h2>Optimizing JavaScript</h2>
+        <h1>Rule 8: Be Happy</h1>
+    </section>
+    <section class="slide">
+        <h2>Rule 8: Be Easily Satisfied</h2>
+        <img style="height:350px;" src="974.png">
+    </section>
+    <section class="slide">
+        <h2>Optimizing JavaScript</h2>
+        <h3>Example: maxHeight</h3>
+        <div>
+            <script type="codemirror" data-selector="#code-maxHeight">
+                var suite = new Benchmark.Suite;
+(function ($) {
+    $.fn.maxHeight1 = function() {
+        var max = 0;
+        this.each(function() {
+          max = Math.max( max, $(this).height() );
+        });
+        return max;
+    };
+}(jQuery));
+                suite.on("start", function () {
+                    $("#wait").show();
+                }).on('complete', function() {
+                    $("#wait").hide();
+                    this.forEach(function (b) {
+                        console.log(b.name, Benchmark.formatNumber(b.hz.toFixed(0)));
+                    });
+                    console.log('Fastest is ' + this.filter('fastest').pluck('name'));
+                });
+            </script>
+            <textarea id="code-maxHeight" name="code" class="code" mode="javascript" style="display: none;" runnable="true" globals="Benchmark, jQuery, $">
+//http://docs.jquery.com/Plugins/Authoring
+(function ($) {
+    $.fn.maxHeight1 = function() {
+        var max = 0;
+        this.each(function() {
+          max = Math.max( max, $(this).height() );
+        });
+        return max;
+    };
+}(jQuery));
+
+(function ($){
+    $.fn.maxHeight2 = function() {
+        var max;
+        //make this faster
+        return max;
+    };
+})( jQuery );
+
+suite.add('maxHeight1', function () {
+    $("div").maxHeight1();
+}).add('maxHeight2', function () {
+    $("div").maxHeight2();
+}).run({'async': true});
+            </textarea>
+        </div>
+    </section>
+    <section class="slide">
+        <h2>Optimizing JavaScript</h2>
+        <h3>Example: maxHeight</h3>
+        <div>
+            <script type="codemirror" data-selector="#code-maxHeightAnswer">
+                var suite = new Benchmark.Suite;
+                suite.on("start", function () {
+                    $("#wait").show();
+                }).on('complete', function() {
+                    $("#wait").hide();
+                    this.forEach(function (b) {
+                        console.log(b.name, Benchmark.formatNumber(b.hz.toFixed(0)));
+                    });
+                    console.log('Fastest is ' + this.filter('fastest').pluck('name'));
+                });
+            </script>
+            <textarea id="code-maxHeightAnswer" name="code" class="code" mode="javascript" style="display: none;" runnable="true" globals="Benchmark, jQuery, $">
+//http://docs.jquery.com/Plugins/Authoring
+(function ($) {
+    $.fn.maxHeight1 = function() {
+        var max = 0;
+        this.each(function() {
+          max = Math.max( max, $(this).height() );
+        });
+        return max;
+    };
+}(jQuery));
+
+(function ($){
+    $.fn.maxHeight2 = function() {
+        var max = 0, i, len, h;
+        for (i = 0, len = this.length; i < len; i += 1) {
+            h = this[i].offsetHeight;
+            max = h > max ? h : max;
+        }
+        return max;
+    };
+})( jQuery );
+
+suite.add('maxHeight1', function () {
+    $("div").maxHeight1();
+}).add('maxHeight2', function () {
+    $("div").maxHeight2();
+}).run({'async': true});
+            </textarea>
+        </div>
+    </section>
+    <section class="slide">
+        <h2>Optimizing JavaScript</h2>
+        <h3>Example: lockDimensions</h3>
+        <div>
+            <script type="codemirror" data-selector="#code-lockDimensions">
+                var suite = new Benchmark.Suite, $testList = $("#testList");
+                (function ( $ ){
+                    $.fn.lockDimensions1 = function( type ) {
+                        return this.each(function() {
+                            var $this = $( this );
+                            if ( !type || type == 'width' ) {
+                                $this.width( $this.width() );
+                            }
+                            if ( !type || type == 'height' ) {
+                                $this.height( $this.height() );
+                            }
+                        });
+                    };
+                })( jQuery );
+                suite.on("start", function () {
+                    $("#wait").show();
+                }).on('complete', function() {
+                    $("#wait").hide();
+                    this.forEach(function (b) {
+                        console.log(b.name, Benchmark.formatNumber(b.hz.toFixed(0)));
+                    });
+                    console.log('Fastest is ' + this.filter('fastest').pluck('name'));
+                });
+            </script>
+            <textarea id="code-lockDimensions" name="code" class="code" mode="javascript" style="display: none;" runnable="true" globals="Benchmark, jQuery, $">
+//http://docs.jquery.com/Plugins/Authoring
+(function ( $ ){
+    $.fn.lockDimensions1 = function( type ) {
+        return this.each(function() {
+            var $this = $( this );
+            if ( !type || type == 'width' ) {
+                $this.width( $this.width() );
+            }
+            if ( !type || type == 'height' ) {
+                $this.height( $this.height() );
+            }
+        });
+    };
+})( jQuery );
+
+(function ( $ ){
+    $.fn.lockDimensions2 = function( type ) {
+        //make this faster
+        return this;
+    };
+})( jQuery );
+
+suite.add('lockDimensions1', function () {
+    $testList.children("li").lockDimensions1();
+}).add('lockDimensions2', function () {
+    $testList.children("li").lockDimensions2();
+}).run({'async': true});
+            </textarea>
+        </div>
+    </section>
+    <section class="slide">
+        <h2>Optimizing JavaScript</h2>
+        <h3>Example: lockDimensions</h3>
+        <div>
+            <script type="codemirror" data-selector="#code-lockDimensionsAnswer">
+                var suite = new Benchmark.Suite, $testList = $("#testList");
+(function ( $ ){
+    $.fn.lockDimensions1 = function( type ) {
+        return this.each(function() {
+            var $this = $( this );
+            if ( !type || type == 'width' ) {
+                $this.width( $this.width() );
+            }
+            if ( !type || type == 'height' ) {
+                $this.height( $this.height() );
+            }
+        });
+    };
+})( jQuery );
+                suite.on("start", function () {
+                    $("#wait").show();
+                }).on('complete', function() {
+                    $("#wait").hide();
+                    this.forEach(function (b) {
+                        console.log(b.name, Benchmark.formatNumber(b.hz.toFixed(0)));
+                    });
+                    console.log('Fastest is ' + this.filter('fastest').pluck('name'));
+                });
+            </script>
+            <textarea id="code-lockDimensionsAnswer" name="code" class="code" mode="javascript" style="display: none;" runnable="true" globals="Benchmark, jQuery, $">
+(function ( $ ){
+    var $elm = $(1), elm;
+    $.fn.lockDimensions2 = function( type ) {
+        var i, len;
+        for (i = 0, len = this.length; i < len; i += 1) {
+            $elm[0] = elm = this[i];
+            if ( !type || type == 'width' ) {
+                $elm.width( elm.offsetWidth );
+            }
+            if ( !type || type == 'height' ) {
+                $elm.height( elm.offsetHeight );
+            }
+        }
+        return this;
+    };
+})( jQuery );
+
+suite.add('lockDimensions1', function () {
+    $testList.children("li").lockDimensions1();
+}).add('lockDimensions2', function () {
+    $testList.children("li").lockDimensions2();
+}).run({'async': true});
+            </textarea>
+        </div>
+    </section>
+        <form action="." method="get" class="goto-form">
+        <label for="goto-slide">Go to slide:</label>
+        <input type="text" name="slidenum" id="goto-slide" list="goto-datalist">
+        <datalist id="goto-datalist"></datalist>
+        <input type="submit" value="Go">
+	</form>
+	
+	<a href="#" class="deck-prev-link" title="Previous">&#8592;</a>
+	<a href="#" class="deck-next-link" title="Next">&#8594;</a>
+	
+	<p class="deck-status">
+		<span class="deck-status-current"></span>
+		/
+		<span class="deck-status-total"></span>
+	</p>
+    </article>
+    <!-- Other extension HTML snippets go here, at the bottom of the deck container. -->
+    <div id="wait" style="position: absolute; top: 30%; left: 30%; display: none;">
+        <img src="wait.gif" alt="please wait"/>
+    </div>
+    <ul id="testList" style="position: absolute; left: -1000px">
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+        <li></li>
+    </ul>
+    <!-- Update these paths to point to the correct files. -->
+    <script src="../jquery-1.7.min.js"></script>
+    <script src="../core/deck.core.js"></script>
+
+    <!-- Add any other extension JS files here -->
+    <!-- Deck Core and extensions -->
+    <script src="../extensions/menu/deck.menu.js"></script>
+    <script src="../extensions/goto/deck.goto.js"></script>
+    <script src="../extensions/status/deck.status.js"></script>
+    <script src="../extensions/navigation/deck.navigation.js"></script>
+    <script src="../extensions/hash/deck.hash.js"></script>
+
+    <!-- include the base codemirror code. -->
+    <script src="../extensions/codemirror/codemirror.js"></script>
+
+    <!-- include the code syntax you want to highlight -->
+    <!-- javascript -->
+    <script src="../extensions/codemirror/mode/javascript/javascript.js"></script>
+    <script src="../extensions/codemirror/deck.codemirror.js"></script>
+
+    <!-- benchmark -->
+    <script src="../extensions/benchmark/benchmark.js"></script>
+    <!-- Initialize the deck. You can put this in an external file if desired. -->
+    <script>
+        $(function() {
+            $.deck('.slide');
+        });
+    </script>
+</body>
+</html>
